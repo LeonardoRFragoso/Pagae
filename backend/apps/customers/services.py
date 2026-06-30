@@ -27,6 +27,9 @@ class CustomerService:
 
         customer = self.repository.get_by_cpf(cpf)
         if customer is None:
+            # Sandbox-only defaults: server-to-server customers get a conservative
+            # approved limit so the credit engine can evaluate the request. This does
+            # NOT represent a guaranteed approval or real KYC.
             customer = self.repository.create(
                 user=None,
                 cpf=cpf,
@@ -35,6 +38,10 @@ class CustomerService:
                 phone=data.get("phone", ""),
                 email=data.get("email", ""),
                 kyc_status="approved",
+                serasa_score=750,
+                risk_tier="low",
+                approved_limit=500_00,
+                used_limit=0,
             )
             logger.info(
                 "customer_created_by_merchant",

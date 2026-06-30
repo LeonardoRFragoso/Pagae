@@ -69,6 +69,83 @@ class TestCustomerCreate:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+class TestCustomerMerchant:
+    URL = "/api/v1/customers/merchant/"
+
+    def _create_key(self, merchant_user):
+        from apps.merchants.services import MerchantService
+        from tests.factories import MerchantFactory
+
+        MerchantFactory(user=merchant_user, status="active")
+        service = MerchantService()
+        result = service.generate_api_key(user=merchant_user)
+        return result.full_key
+
+    def _client(self, full_key: str):
+        from rest_framework.test import APIClient
+
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {full_key}")
+        return client
+
+    def test_create_customer_via_merchant_success(self, merchant_user):
+        full_key = self._create_key(merchant_user)
+        payload = {
+            "cpf": VALID_CPF,
+            "full_name": "João da Silva",
+            "email": "joao@merchant.com",
+            "phone": "+5511999990000",
+        }
+        response = self._client(full_key).post(self.URL, payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()["data"]
+        assert data["cpf"] == VALID_CPF
+        assert data["full_name"] == "João da Silva"
+        assert data["email"] == "joao@merchant.com"
+        assert data["kyc_status"] == KYCStatus.APPROVED
+
+    def test_update_customer_via_merchant_success(self, merchant_user):
+        from tests.factories import CustomerFactory
+
+        full_key = self._create_key(merchant_user)
+        CustomerFactory(cpf=VALID_CPF, full_name="Antigo Nome", email="old@merchant.com")
+        payload = {
+            "cpf": VALID_CPF,
+            "full_name": "Novo Nome",
+            "email": "new@merchant.com",
+        }
+        response = self._client(full_key).post(self.URL, payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        customer = Customer.objects.get(cpf=VALID_CPF)
+        assert customer.full_name == "Novo Nome"
+        assert customer.email == "new@merchant.com"
+
+    def test_merchant_endpoint_unauthenticated(self, api_client):
+        response = api_client.post(self.URL, {"cpf": VALID_CPF}, format="json")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_merchant_endpoint_invalid_api_key(self, api_client):
+        api_client.credentials(HTTP_AUTHORIZATION="Bearer pk_live_invalidkey000000000000000000000000")
+        response = api_client.post(self.URL, {"cpf": VALID_CPF}, format="json")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_merchant_customer_cpf_is_normalized(self, merchant_user):
+        full_key = self._create_key(merchant_user)
+        payload = {"cpf": "529.982.247-25", "full_name": "João Normalizado"}
+        response = self._client(full_key).post(self.URL, payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json()["data"]["cpf"] == VALID_CPF
+
+    def test_merchant_customer_invalid_cpf_fails(self, merchant_user):
+        full_key = self._create_key(merchant_user)
+        response = self._client(full_key).post(self.URL, {"cpf": "00000000000"}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_customer_user_cannot_access_merchant_endpoint(self, customer_user_client):
+        response = customer_user_client.post(self.URL, {"cpf": VALID_CPF}, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 class TestCustomerMe:
     URL = "/api/v1/customers/me/"
 

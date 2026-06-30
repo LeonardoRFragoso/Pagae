@@ -72,6 +72,31 @@ class TestCheckoutCreate:
         assert data["status"] == CheckoutStatus.DENIED
         assert data["denial_reason"] == "insufficient_limit"
 
+    def test_create_checkout_with_server_to_server_customer(self, merchant_user):
+        full_key = self._create_key(merchant_user)
+        payload = {
+            "merchant_order_id": "ORDER-S2S-001",
+            "customer": {
+                "cpf": "52998224725",
+                "full_name": "Maria Server",
+                "email": "maria@server.com",
+                "phone": "+5511999991111",
+            },
+            "total_amount": 20000,
+            "installment_count": 3,
+        }
+        response = self._client(full_key).post(URL, payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()["data"]
+        assert data["status"] == CheckoutStatus.APPROVED
+        assert data["total_amount"] == 20000
+        assert data["installment_count"] == 3
+        assert data["qr_code"]
+        assert len(data["schedule"]) == 3
+        from apps.customers.models import Customer
+
+        assert Customer.objects.filter(cpf="52998224725").exists()
+
     def test_create_checkout_invalid_api_key(self, api_client):
         api_client.credentials(HTTP_AUTHORIZATION="Bearer pk_live_invalidkeyhere00000000000000000000000000000000")
         response = api_client.post(
