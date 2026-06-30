@@ -64,6 +64,9 @@ yarn-error.log*
 # Docker
 *.pid
 
+# Celery beat default scheduler
+backend/celerybeat-schedule*
+
 # OS
 .DS_Store
 Thumbs.db

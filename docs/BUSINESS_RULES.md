@@ -31,7 +31,8 @@ O motor de risco (`CreditEngine`) aplica as seguintes regras, registrando todas 
 4. **Cliente bloqueado:** se houver bloqueio ativo, a compra é negada.
 5. **Limite máximo para primeira compra:** definido por faixa de score (R$150, R$300, R$500).
 6. **Bloqueio se houver parcela atrasada:** parcelas em status `overdue` suspendem o limite automaticamente.
-7. **Velocity:** máximo de 2 aplicações de crédito por CPF a cada 24 horas.
+7. **Liberação de limite:** a cada parcela paga, o valor correspondente é liberado no `used_limit` do cliente, restabelecendo o limite disponível.
+8. **Velocity:** máximo de 2 aplicações de crédito por CPF a cada 24 horas.
 
 Os motivos de reprovação são armazenados e podem ser consultados.
 

@@ -52,7 +52,7 @@ curl -X POST http://localhost:8000/api/v1/checkout/ \
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | POST | `/api/v1/orders/` | Cria um pedido (API key) |
-| GET | `/api/v1/orders/` | Lista pedidos do lojista (JWT) |
+| GET | `/api/v1/orders/list/` | Lista pedidos do lojista (JWT) |
 | GET | `/api/v1/orders/<id>/` | Detalhes de um pedido |
 
 Payload de criação:
@@ -72,7 +72,6 @@ Payload de criação:
 |--------|----------|-----------|
 | POST | `/api/v1/checkout/` | Cria sessão de checkout a partir de pedido ou dados completos |
 | GET | `/api/v1/checkout/<id>/` | Resumo público do checkout |
-| POST | `/api/v1/checkout/<id>/complete/` | Finaliza checkout público com dados do cliente e escolha de parcelas (quando habilitado) |
 
 Exemplo de resposta de `POST /api/v1/checkout/`:
 

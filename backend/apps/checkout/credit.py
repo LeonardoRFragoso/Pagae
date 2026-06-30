@@ -31,10 +31,19 @@ class StubBureauClient:
     """Deterministic stub for development and tests."""
 
     def check(self, cpf: str) -> BureauResult:
-        digits = [int(c) for c in cpf if c.isdigit()]
-        score = 500 + (sum(digits) % 300)
-        has_negative = digits[-1] < 2 if digits else False
-        return BureauResult(cpf=cpf, score=score, has_active_negative=has_negative)
+        from apps.customers.models import Customer
+
+        try:
+            customer = Customer.objects.get(cpf=cpf)
+        except Customer.DoesNotExist:
+            customer = None
+
+        if customer is not None and customer.serasa_score:
+            score = customer.serasa_score
+        else:
+            score = 750
+
+        return BureauResult(cpf=cpf, score=score, has_active_negative=False)
 
 
 _LIMITS_BY_SCORE = [

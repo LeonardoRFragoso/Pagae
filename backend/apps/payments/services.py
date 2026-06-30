@@ -136,6 +136,9 @@ class PaymentService:
         )
 
         self.ledger_service.post_installment_payment(installment)
+        customer = installment.checkout.customer
+        customer.used_limit = max(0, customer.used_limit - installment.amount)
+        customer.save(update_fields=["used_limit"])
         checkout = installment.checkout
         self.webhook_service.enqueue(
             checkout.merchant,
