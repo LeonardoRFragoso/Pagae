@@ -107,7 +107,7 @@ make frontend-build  # build do portal Vue
 
 ## Deploy
 
-Veja o passo a passo completo em `docs/DEPLOYMENT.md` e a checklist de lançamento em `docs/STAGING_CHECKLIST.md`.
+Veja o passo a passo completo em `docs/DEPLOYMENT.md`, a checklist de lançamento em `docs/STAGING_CHECKLIST.md` e o guia de execução manual em `docs/STAGING_DEPLOY_MANUAL.md`.
 
 ---
 
