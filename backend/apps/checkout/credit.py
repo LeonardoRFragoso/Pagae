@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 from django.core.cache import cache
@@ -21,6 +21,7 @@ class BureauResult:
 class CreditDecision:
     result: str  # approve | deny
     reason: str = ""
+    reasons: list[str] = field(default_factory=list)
     approved_amount: int = 0
     approved_limit: int = 0
     score: int = 0
@@ -51,15 +52,29 @@ class CreditEngine:
         self.bureau_client = bureau_client or StubBureauClient()
 
     def decide(self, customer: Customer, amount_cents: int) -> CreditDecision:
+        reasons: list[str] = []
+
         # 1. KYC
         if not customer.is_kyc_approved:
-            return CreditDecision(result="deny", reason="kyc_not_approved")
+            reasons.append("kyc_not_approved")
+            return CreditDecision(result="deny", reason=reasons[0], reasons=reasons)
+
+        reasons.append("kyc_approved")
 
         # 2. Blocked
         if customer.is_blocked:
-            return CreditDecision(result="deny", reason="customer_blocked")
+            reasons.append("customer_blocked")
+            return CreditDecision(result="deny", reason=reasons[-1], reasons=reasons)
 
-        # 3. Velocity
+        # 3. CPF / phone presence
+        if not customer.cpf:
+            reasons.append("missing_cpf")
+            return CreditDecision(result="deny", reason=reasons[-1], reasons=reasons)
+        if not customer.phone:
+            reasons.append("missing_phone")
+            return CreditDecision(result="deny", reason=reasons[-1], reasons=reasons)
+
+        # 4. Velocity
         velocity_key = f"credit:velocity:{customer.cpf}"
         try:
             applications_today = cache.incr(velocity_key, delta=1)
@@ -67,30 +82,52 @@ class CreditEngine:
             cache.set(velocity_key, 1, timeout=86_400)
             applications_today = 1
         if applications_today > _MAX_APPLICATIONS_PER_DAY:
-            return CreditDecision(result="deny", reason="velocity_exceeded")
+            reasons.append("velocity_exceeded")
+            return CreditDecision(result="deny", reason=reasons[-1], reasons=reasons)
 
-        # 4. Bureau check
+        # 5. Bureau check
         bureau = self.bureau_client.check(customer.cpf)
         if bureau.has_active_negative:
-            return CreditDecision(result="deny", reason="negative_record")
+            reasons.append("negative_record")
+            return CreditDecision(result="deny", reason=reasons[-1], score=bureau.score, reasons=reasons)
 
-        # 5. Score-based limit
+        # 6. Score-based limit
         approved_limit = next(
             (limit for score, limit in _LIMITS_BY_SCORE if bureau.score >= score),
             0,
         )
         if approved_limit == 0:
-            return CreditDecision(result="deny", reason="low_score", score=bureau.score)
+            reasons.append("low_score")
+            return CreditDecision(result="deny", reason=reasons[-1], score=bureau.score, reasons=reasons)
 
-        # 6. Amount check
+        reasons.append(f"score_ok:{bureau.score}")
+
+        # 7. Amount check
         if amount_cents > approved_limit:
-            return CreditDecision(result="deny", reason="amount_exceeds_limit", score=bureau.score)
+            reasons.append("amount_exceeds_limit")
+            return CreditDecision(
+                result="deny",
+                reason=reasons[-1],
+                score=bureau.score,
+                approved_limit=approved_limit,
+                reasons=reasons,
+            )
 
         if amount_cents > customer.available_limit:
-            return CreditDecision(result="deny", reason="insufficient_limit", score=bureau.score)
+            reasons.append("insufficient_limit")
+            return CreditDecision(
+                result="deny",
+                reason=reasons[-1],
+                score=bureau.score,
+                approved_limit=approved_limit,
+                reasons=reasons,
+            )
 
+        reasons.append("approved")
         return CreditDecision(
             result="approve",
+            reason=reasons[-1],
+            reasons=reasons,
             approved_amount=amount_cents,
             approved_limit=approved_limit,
             score=bureau.score,

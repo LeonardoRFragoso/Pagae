@@ -108,9 +108,11 @@ class MerchantService:
         return api_key
 
     def get_dashboard(self, user: "User") -> dict[str, Any]:
+        from django.db.models import Count, Q
         from django.utils import timezone
 
         from apps.checkout.models import CheckoutStatus
+        from apps.payments.models import Installment, InstallmentStatus
 
         merchant = self.repository.get_by_user_or_raise(user)
         now = timezone.now()
@@ -134,6 +136,15 @@ class MerchantService:
             total=Sum("net_amount")
         )["total"] or 0
 
+        total_sold = self._sum_amount(approved_sessions) or 0
+        orders_created = merchant.orders.count() or total
+
+        installment_counts = Installment.objects.filter(checkout__merchant=merchant).aggregate(
+            paid=Count("id", filter=Q(status=InstallmentStatus.PAID)),
+            pending=Count("id", filter=Q(status=InstallmentStatus.PENDING)),
+            overdue=Count("id", filter=Q(status=InstallmentStatus.OVERDUE)),
+        )
+
         return {
             "gmv_today": gmv_today,
             "gmv_week": gmv_week,
@@ -141,6 +152,11 @@ class MerchantService:
             "approval_rate": approval_rate,
             "total_transactions": total,
             "pending_settlement": pending_settlement,
+            "total_sold": total_sold,
+            "orders_created": orders_created,
+            "installments_paid": installment_counts["paid"] or 0,
+            "installments_pending": installment_counts["pending"] or 0,
+            "installments_overdue": installment_counts["overdue"] or 0,
         }
 
     def _sum_amount(self, queryset) -> int:

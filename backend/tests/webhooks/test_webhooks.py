@@ -9,10 +9,11 @@ pytestmark = pytest.mark.django_db
 
 
 class TestWebhookService:
-    def test_enqueue_creates_delivery(self):
+    def test_enqueue_creates_delivery(self, mocker):
         user = UserFactory(role="merchant_owner")
         merchant = MerchantFactory(user=user, webhook_url="https://example.com/webhook")
         service = WebhookService()
+        mocker.patch("apps.webhooks.tasks.deliver_webhook.delay")
         delivery = service.enqueue(merchant, "checkout.approved", {"checkout_id": "123"})
         assert delivery is not None
         assert delivery.status == WebhookStatus.PENDING

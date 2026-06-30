@@ -77,6 +77,41 @@ function formatCents(cents) {
             {{ formatCents(dashboard.pending_settlement) }}
           </p>
         </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <p class="text-sm text-slate-500 font-medium">Total vendido</p>
+          <p class="text-3xl font-bold text-slate-900 mt-2">
+            {{ formatCents(dashboard.total_sold) }}
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <p class="text-sm text-slate-500 font-medium">Pedidos criados</p>
+          <p class="text-3xl font-bold text-slate-900 mt-2">
+            {{ dashboard.orders_created }}
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <p class="text-sm text-slate-500 font-medium">Parcelas pagas</p>
+          <p class="text-3xl font-bold text-green-600 mt-2">
+            {{ dashboard.installments_paid }}
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <p class="text-sm text-slate-500 font-medium">Parcelas pendentes</p>
+          <p class="text-3xl font-bold text-yellow-600 mt-2">
+            {{ dashboard.installments_pending }}
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <p class="text-sm text-slate-500 font-medium">Parcelas atrasadas</p>
+          <p class="text-3xl font-bold text-red-600 mt-2">
+            {{ dashboard.installments_overdue }}
+          </p>
+        </div>
       </div>
     </div>
   </AppLayout>

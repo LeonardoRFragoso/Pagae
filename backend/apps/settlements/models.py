@@ -31,3 +31,12 @@ class Settlement(BaseModel):
 
     def __str__(self) -> str:
         return f"Settlement {self.id} — {self.amount} cents ({self.status})"
+
+
+class MerchantSettlement(Settlement):
+    """Proxy model used to expose the settlement concept in merchant-facing APIs."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Merchant Settlement"
+        verbose_name_plural = "Merchant Settlements"

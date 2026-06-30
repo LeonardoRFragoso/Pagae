@@ -97,6 +97,11 @@ class MerchantDashboardSerializer(serializers.Serializer):
     approval_rate = serializers.FloatField()
     total_transactions = serializers.IntegerField()
     pending_settlement = serializers.IntegerField()
+    total_sold = serializers.IntegerField()
+    orders_created = serializers.IntegerField()
+    installments_paid = serializers.IntegerField()
+    installments_pending = serializers.IntegerField()
+    installments_overdue = serializers.IntegerField()
 
 
 class MerchantTransactionSerializer(serializers.ModelSerializer):

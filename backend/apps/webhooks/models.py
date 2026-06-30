@@ -30,3 +30,12 @@ class WebhookDelivery(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.event_type} to {self.merchant} — {self.status}"
+
+
+class WebhookEvent(WebhookDelivery):
+    """Proxy model used to expose webhook events in the domain vocabulary."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Webhook Event"
+        verbose_name_plural = "Webhook Events"

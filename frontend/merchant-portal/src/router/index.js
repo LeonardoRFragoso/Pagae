@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
+import CheckoutView from "@/views/CheckoutView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import LoginView from "@/views/LoginView.vue";
 import SettlementsView from "@/views/SettlementsView.vue";
@@ -14,6 +15,12 @@ const router = createRouter({
       path: "/login",
       name: "login",
       component: LoginView,
+      meta: { public: true },
+    },
+    {
+      path: "/checkout/:id",
+      name: "checkout",
+      component: CheckoutView,
       meta: { public: true },
     },
     {

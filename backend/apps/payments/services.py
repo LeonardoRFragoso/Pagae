@@ -6,10 +6,10 @@ from django.utils import timezone
 from apps.customers.models import Customer
 from apps.ledger.services import LedgerService
 from apps.webhooks.services import WebhookService
-from integrations.celcoin import CelcoinClient
 
-from .models import Installment, InstallmentStatus, PixChargeStatus
-from .repositories import InstallmentRepository, PixChargeRepository
+from .models import Installment, InstallmentStatus, PixChargeStatus, TransactionProvider, TransactionStatus
+from .providers import PaymentProvider, get_payment_provider
+from .repositories import InstallmentRepository, PaymentTransactionRepository, PixChargeRepository
 
 
 class PaymentService:
@@ -17,13 +17,15 @@ class PaymentService:
         self,
         installment_repository: InstallmentRepository | None = None,
         charge_repository: PixChargeRepository | None = None,
-        celcoin: CelcoinClient | None = None,
+        transaction_repository: PaymentTransactionRepository | None = None,
+        provider: PaymentProvider | None = None,
         ledger_service: LedgerService | None = None,
         webhook_service: WebhookService | None = None,
     ) -> None:
         self.installment_repository = installment_repository or InstallmentRepository()
         self.charge_repository = charge_repository or PixChargeRepository()
-        self.celcoin = celcoin or CelcoinClient()
+        self.transaction_repository = transaction_repository or PaymentTransactionRepository()
+        self.provider = provider or get_payment_provider()
         self.ledger_service = ledger_service or LedgerService()
         self.webhook_service = webhook_service or WebhookService()
 
@@ -52,7 +54,7 @@ class PaymentService:
                 due_date=due_date,
             )
 
-            charge = self._create_pix_charge(installment, amount, f"Parcela {i}/{installment_count}")
+            charge = self._create_charge(installment, amount, f"Parcela {i}/{installment_count}")
             if i == 1:
                 first_charge = charge
 
@@ -68,11 +70,11 @@ class PaymentService:
 
         return schedule, first_charge
 
-    def _create_pix_charge(self, installment: Installment, amount: int, description: str) -> Any:
-        result = self.celcoin.create_dynamic_qr(amount_cents=amount, description=description)
-        return self.charge_repository.create(
+    def _create_charge(self, installment: Installment, amount: int, description: str) -> Any:
+        result = self.provider.create_charge(amount_cents=amount, description=description)
+        charge = self.charge_repository.create(
             installment=installment,
-            celcoin_id=result.celcoin_id,
+            celcoin_id=result.provider_transaction_id,
             txid=result.txid,
             amount=amount,
             qr_code=result.qr_code,
@@ -80,6 +82,20 @@ class PaymentService:
             status=PixChargeStatus.ACTIVE,
             expires_at=result.expires_at,
         )
+        self.transaction_repository.create(
+            installment=installment,
+            provider=TransactionProvider(self.provider.name),
+            provider_transaction_id=result.provider_transaction_id,
+            amount=amount,
+            status=TransactionStatus.PENDING,
+            payload={
+                "txid": result.txid,
+                "qr_code": result.qr_code,
+                "pix_code": result.pix_code,
+                "expires_at": result.expires_at.isoformat(),
+            },
+        )
+        return charge
 
     def process_payment(self, txid: str, paid_at: Any | None = None) -> dict[str, Any]:
         charge = self.charge_repository.get_by_txid(txid)
@@ -101,6 +117,24 @@ class PaymentService:
             status=InstallmentStatus.PAID,
             paid_at=paid_at,
         )
+
+        transaction = self._get_transaction_for_txid(txid)
+        if transaction is None:
+            transaction = self.transaction_repository.create(
+                installment=installment,
+                provider=TransactionProvider(self.provider.name),
+                provider_transaction_id="",
+                amount=installment.amount,
+                status=TransactionStatus.PENDING,
+                payload={"txid": txid},
+            )
+        self.transaction_repository.update(
+            transaction,
+            status=TransactionStatus.PAID,
+            paid_at=paid_at,
+            webhook_payload={"txid": txid, "paid_at": str(paid_at)},
+        )
+
         self.ledger_service.post_installment_payment(installment)
         checkout = installment.checkout
         self.webhook_service.enqueue(
@@ -118,3 +152,6 @@ class PaymentService:
             ),
         )
         return {"status": "paid", "installment_id": str(installment.id)}
+
+    def _get_transaction_for_txid(self, txid: str) -> Any | None:
+        return self.transaction_repository.get_by_txid(txid)

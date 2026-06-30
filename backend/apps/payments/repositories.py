@@ -1,4 +1,4 @@
-from .models import Installment, PixCharge
+from .models import Installment, PaymentTransaction, PixCharge
 
 
 class InstallmentRepository:
@@ -24,3 +24,19 @@ class PixChargeRepository:
 
     def get_by_txid(self, txid: str) -> PixCharge | None:
         return PixCharge.objects.select_related("installment", "installment__checkout").filter(txid=txid).first()
+
+
+class PaymentTransactionRepository:
+    def create(self, **kwargs) -> PaymentTransaction:
+        return PaymentTransaction.objects.create(**kwargs)
+
+    def update(self, transaction: PaymentTransaction, **kwargs) -> PaymentTransaction:
+        for key, value in kwargs.items():
+            setattr(transaction, key, value)
+        transaction.save(update_fields=[*kwargs.keys(), "updated_at"])
+        return transaction
+
+    def get_by_txid(self, txid: str) -> PaymentTransaction | None:
+        return PaymentTransaction.objects.filter(
+            payload__contains={"txid": txid}
+        ).select_related("installment").first()

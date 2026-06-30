@@ -197,6 +197,8 @@ CORS_ALLOWED_ORIGINS: list[str] = config("CORS_ALLOWED_ORIGINS", cast=Csv(), def
 OTP_TTL_SECONDS: int = config("OTP_TTL_SECONDS", cast=int, default=300)
 OTP_MAX_ATTEMPTS: int = config("OTP_MAX_ATTEMPTS", cast=int, default=3)
 
+PAYMENT_PROVIDER: str = config("PAYMENT_PROVIDER", default="sandbox")
+
 CELCOIN_CLIENT_ID: str = config("CELCOIN_CLIENT_ID", default="")
 CELCOIN_CLIENT_SECRET: str = config("CELCOIN_CLIENT_SECRET", default="")
 CELCOIN_BASE_URL: str = config("CELCOIN_BASE_URL", default="https://sandbox.openfinance.celcoin.dev")

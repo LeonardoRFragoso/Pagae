@@ -67,3 +67,55 @@ class PixCharge(BaseModel):
 
     def __str__(self) -> str:
         return f"Pix {self.txid} ({self.status})"
+
+
+class TransactionStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    PAID = "paid", "Paid"
+    FAILED = "failed", "Failed"
+    CANCELLED = "cancelled", "Cancelled"
+    REFUNDED = "refunded", "Refunded"
+
+
+class TransactionProvider(models.TextChoices):
+    SANDBOX = "sandbox", "Sandbox"
+    CELCOIN = "celcoin", "Celcoin"
+    ASAAS = "asaas", "Asaas"
+    MERCADO_PAGO = "mercado_pago", "Mercado Pago"
+    EFI = "efi", "Efí"
+    IUGU = "iugu", "Iugu"
+    OPENPIX = "openpix", "OpenPix"
+
+
+class PaymentTransaction(BaseModel):
+    """Provider-agnostic record of every payment attempt or settlement."""
+
+    installment = models.ForeignKey(
+        Installment,
+        on_delete=models.CASCADE,
+        related_name="payment_transactions",
+        null=True,
+        blank=True,
+    )
+
+    provider = models.CharField(max_length=20, choices=TransactionProvider.choices)
+    provider_transaction_id = models.CharField(max_length=100, blank=True)
+    amount = models.IntegerField()  # cents
+
+    status = models.CharField(
+        max_length=20,
+        choices=TransactionStatus.choices,
+        default=TransactionStatus.PENDING,
+    )
+    payload = models.JSONField(default=dict, blank=True)
+    webhook_payload = models.JSONField(default=dict, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "payment_transactions"
+        verbose_name = "Payment Transaction"
+        verbose_name_plural = "Payment Transactions"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.provider} {self.provider_transaction_id} ({self.status})"
