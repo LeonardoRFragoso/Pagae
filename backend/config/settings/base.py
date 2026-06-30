@@ -1,15 +1,20 @@
 from datetime import timedelta
 from pathlib import Path
 
+import dj_database_url
 from celery.schedules import crontab
-
 from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY: str = config("SECRET_KEY")
+VERSION: str = config("VERSION", default="1.0.0")
+
+# Security — must be non-empty in production/staging (enforced there).
+SECRET_KEY: str = config("SECRET_KEY", default="")
 
 ALLOWED_HOSTS: list[str] = config("ALLOWED_HOSTS", cast=Csv(), default="localhost")
+
+DEBUG: bool = config("DEBUG", cast=bool, default=False)
 
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -45,6 +50,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -77,20 +83,26 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="pagae"),
-        "USER": config("DB_USER", default="pagae"),
-        "PASSWORD": config("DB_PASSWORD", default="pagae"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-        "OPTIONS": {
-            "connect_timeout": 10,
-        },
-        "CONN_MAX_AGE": 60,
+_database_url = config("DATABASE_URL", default="")
+if _database_url:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=_database_url, conn_max_age=60, ssl_require=False
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DB_NAME", default="pagae"),
+            "USER": config("DB_USER", default="pagae"),
+            "PASSWORD": config("DB_PASSWORD", default="pagae"),
+            "HOST": config("DB_HOST", default="localhost"),
+            "PORT": config("DB_PORT", default="5432"),
+            "OPTIONS": {"connect_timeout": 10},
+            "CONN_MAX_AGE": 60,
+        }
+    }
 
 CACHES = {
     "default": {
@@ -143,6 +155,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardResultsPagination",
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": [],
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "5/minute",
+        "register": "5/hour",
+        "checkout_public": "60/minute",
+        "payment_simulate": "20/minute",
+        "webhook_sandbox": "60/minute",
+    },
 }
 
 SIMPLE_JWT = {
@@ -166,7 +186,7 @@ SIMPLE_JWT = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Pagaê API",
     "DESCRIPTION": "Brazilian BNPL Platform — MVP",
-    "VERSION": "1.0.0",
+    "VERSION": VERSION,
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
 }
@@ -192,7 +212,35 @@ CELERY_BEAT_SCHEDULE: dict = {
     },
 }
 
-CORS_ALLOWED_ORIGINS: list[str] = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default="http://localhost:5173")
+CORS_ALLOWED_ORIGINS: list[str] = config(
+    "CORS_ALLOWED_ORIGINS", cast=Csv(), default="http://localhost:5173"
+)
+
+CSRF_TRUSTED_ORIGINS: list[str] = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default="")
+
+USE_X_FORWARDED_HOST: bool = config("USE_X_FORWARDED_HOST", cast=bool, default=False)
+
+SECURE_PROXY_SSL_HEADER: tuple[str, str] | None = (
+    ("HTTP_X_FORWARDED_PROTO", "https")
+    if config("USE_X_FORWARDED_SSL", cast=bool, default=False)
+    else None
+)
+
+SECURE_SSL_REDIRECT: bool = config("SECURE_SSL_REDIRECT", cast=bool, default=False)
+SECURE_HSTS_SECONDS: int = config("SECURE_HSTS_SECONDS", cast=int, default=0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS: bool = config(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS", cast=bool, default=False
+)
+SECURE_HSTS_PRELOAD: bool = config("SECURE_HSTS_PRELOAD", cast=bool, default=False)
+SECURE_CONTENT_TYPE_NOSNIFF: bool = config(
+    "SECURE_CONTENT_TYPE_NOSNIFF", cast=bool, default=True
+)
+SECURE_BROWSER_XSS_FILTER: bool = config(
+    "SECURE_BROWSER_XSS_FILTER", cast=bool, default=True
+)
+SESSION_COOKIE_SECURE: bool = config("SESSION_COOKIE_SECURE", cast=bool, default=False)
+CSRF_COOKIE_SECURE: bool = config("CSRF_COOKIE_SECURE", cast=bool, default=False)
+X_FRAME_OPTIONS: str = config("X_FRAME_OPTIONS", default="DENY")
 
 OTP_TTL_SECONDS: int = config("OTP_TTL_SECONDS", cast=int, default=300)
 OTP_MAX_ATTEMPTS: int = config("OTP_MAX_ATTEMPTS", cast=int, default=3)
@@ -201,7 +249,9 @@ PAYMENT_PROVIDER: str = config("PAYMENT_PROVIDER", default="sandbox")
 
 CELCOIN_CLIENT_ID: str = config("CELCOIN_CLIENT_ID", default="")
 CELCOIN_CLIENT_SECRET: str = config("CELCOIN_CLIENT_SECRET", default="")
-CELCOIN_BASE_URL: str = config("CELCOIN_BASE_URL", default="https://sandbox.openfinance.celcoin.dev")
+CELCOIN_BASE_URL: str = config(
+    "CELCOIN_BASE_URL", default="https://sandbox.openfinance.celcoin.dev"
+)
 
 SERASA_API_KEY: str = config("SERASA_API_KEY", default="")
 SERASA_BASE_URL: str = config("SERASA_BASE_URL", default="")
@@ -215,6 +265,29 @@ ZAPI_BASE_URL: str = config("ZAPI_BASE_URL", default="https://api.z-api.io")
 
 BREVO_API_KEY: str = config("BREVO_API_KEY", default="")
 DEFAULT_FROM_EMAIL: str = config("DEFAULT_FROM_EMAIL", default="noreply@pagae.com.br")
+
+EMAIL_BACKEND: str = config(
+    "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST: str = config("EMAIL_HOST", default="")
+EMAIL_PORT: int = config("EMAIL_PORT", cast=int, default=587)
+EMAIL_HOST_USER: str = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD: str = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS: bool = config("EMAIL_USE_TLS", cast=bool, default=True)
+EMAIL_USE_SSL: bool = config("EMAIL_USE_SSL", cast=bool, default=False)
+
+FRONTEND_URL: str = config("FRONTEND_URL", default="http://localhost:5173")
+BACKEND_URL: str = config("BACKEND_URL", default="http://localhost:8000")
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {"location": str(MEDIA_ROOT)},
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 LOGGING = {
     "version": 1,

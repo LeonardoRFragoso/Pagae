@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - SECRET_KEY=prod-local-secret-change-in-real-deployment
+      - DEBUG=False
+      - DATABASE_URL=postgres://pagae:pagae@postgres:5432/pagae
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+      - CSRF_TRUSTED_ORIGINS=http://localhost:5173
+      - FRONTEND_URL=http://localhost:5173
+      - BACKEND_URL=http://localhost:8000
+      - PAYMENT_PROVIDER=sandbox
+      - USE_X_FORWARDED_SSL=False
+      - SECURE_SSL_REDIRECT=False
+      - SECURE_HSTS_SECONDS=0
+      - SESSION_COOKIE_SECURE=False
+      - CSRF_COOKIE_SECURE=False
+      - GUNICORN_WORKERS=2
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A config.celery worker --loglevel=info
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - SECRET_KEY=prod-local-secret-change-in-real-deployment
+      - DEBUG=False
+      - DATABASE_URL=postgres://pagae:pagae@postgres:5432/pagae
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+      - PAYMENT_PROVIDER=sandbox
+    depends_on:
+      - redis
+      - postgres
+
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A config.celery beat --loglevel=info
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - SECRET_KEY=prod-local-secret-change-in-real-deployment
+      - DEBUG=False
+      - DATABASE_URL=postgres://pagae:pagae@postgres:5432/pagae
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - PAYMENT_PROVIDER=sandbox
+    depends_on:
+      - redis
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pagae
+      POSTGRES_USER: pagae
+      POSTGRES_PASSWORD: pagae
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "16379:6379"
+
+volumes:
+  postgres_prod_data:

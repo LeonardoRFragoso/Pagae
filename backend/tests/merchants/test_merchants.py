@@ -1,9 +1,8 @@
-import hashlib
 
 import pytest
 from rest_framework import status
 
-from apps.merchants.models import Merchant, MerchantApiKey, MerchantStatus
+from apps.merchants.models import MerchantApiKey, MerchantStatus
 from apps.merchants.services import MerchantService, _hash_key
 from tests.factories import MerchantApiKeyFactory, MerchantFactory, UserFactory
 
@@ -130,7 +129,7 @@ class TestApiKeyGeneration:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_api_key_authentication(self, api_client, merchant_user):
-        merchant = MerchantFactory(user=merchant_user)
+        MerchantFactory(user=merchant_user)
         api_client.force_authenticate(user=merchant_user)
         gen_response = api_client.post(
             "/api/v1/merchants/api-keys/", {"environment": "production"}, format="json"

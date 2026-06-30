@@ -60,7 +60,9 @@ class Merchant(BaseModel):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"{self.trade_name or self.legal_name} ({self.cnpj})"
+        from core.privacy import mask_cnpj
+
+        return f"{self.trade_name or self.legal_name} ({mask_cnpj(self.cnpj)})"
 
     @property
     def is_active(self) -> bool:

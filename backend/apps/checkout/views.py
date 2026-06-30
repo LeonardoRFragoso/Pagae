@@ -66,6 +66,7 @@ class OrderListView(APIView):
 
 class CheckoutPublicView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "checkout_public"
 
     def get(self, request: Request, checkout_id: str) -> Response:
         service = CheckoutService()

@@ -4,7 +4,6 @@ import pytest
 
 from apps.collections.rules import DPDAction, get_action
 from apps.collections.services import CollectionsService
-from apps.customers.models import Customer
 from apps.merchants.models import MerchantStatus
 from apps.merchants.services import MerchantService
 from apps.notifications.models import NotificationEventType

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "register"
 
     def post(self, request: Request) -> Response:
         serializer = RegisterSerializer(data=request.data)
@@ -37,6 +38,7 @@ class RegisterView(APIView):
 
 class LoginView(TokenObtainPairView):
     permission_classes = [AllowAny]
+    throttle_scope = "login"
     serializer_class = CustomTokenObtainPairSerializer
 
 

@@ -4,6 +4,24 @@ Base URL: `http://localhost:8000/api/v1/`
 
 Documentação interativa: `http://localhost:8000/api/docs/` (Swagger/OpenAPI).
 
+## Healthcheck
+
+`GET /api/v1/health/`
+
+Endpoint público para load balancers e monitoramento. Retorna:
+
+```json
+{
+  "status": "ok",
+  "database": "ok",
+  "redis": "ok",
+  "payment_provider": "sandbox",
+  "version": "1.0.0"
+}
+```
+
+Retorna HTTP 503 caso PostgreSQL ou Redis estejam indisponíveis.
+
 ## Autenticação
 
 ### JWT (portal do lojista)

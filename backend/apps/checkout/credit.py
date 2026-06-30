@@ -38,10 +38,11 @@ class StubBureauClient:
         except Customer.DoesNotExist:
             customer = None
 
-        if customer is not None and customer.serasa_score:
-            score = customer.serasa_score
-        else:
-            score = 750
+        score = (
+            customer.serasa_score
+            if customer is not None and customer.serasa_score
+            else 750
+        )
 
         return BureauResult(cpf=cpf, score=score, has_active_negative=False)
 

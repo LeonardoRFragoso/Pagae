@@ -14,8 +14,7 @@ services:
       - ./backend/.env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DB_HOST=postgres
-      - DB_PORT=5432
+      - DATABASE_URL=postgres://pagae:pagae@postgres:5432/pagae
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
@@ -35,7 +34,7 @@ services:
       - ./backend/.env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DB_HOST=postgres
+      - DATABASE_URL=postgres://pagae:pagae@postgres:5432/pagae
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
     depends_on:
@@ -54,7 +53,7 @@ services:
       - ./backend/.env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DB_HOST=postgres
+      - DATABASE_URL=postgres://pagae:pagae@postgres:5432/pagae
       - CELERY_BROKER_URL=redis://redis:6379/1
     depends_on:
       - celery

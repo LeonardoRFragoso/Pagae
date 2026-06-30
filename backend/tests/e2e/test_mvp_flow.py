@@ -1,8 +1,9 @@
 import random
+
 import pytest
 from rest_framework.test import APIClient
 
-from apps.accounts.models import User, UserRole
+from apps.accounts.models import User
 from apps.checkout.models import OrderStatus
 from apps.customers.models import Customer, KYCStatus
 from apps.merchants.models import Merchant, MerchantApiKey, MerchantStatus

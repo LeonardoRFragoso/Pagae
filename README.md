@@ -13,6 +13,8 @@ O lojista cria um link de pagamento, o cliente informa seus dados, escolhe o nú
 - **Cache / fila:** Redis 7
 - **Frontend:** Vue 3 + Pinia + Vue Router + Tailwind CSS + Vite
 - **Infra local:** Docker + Docker Compose
+- **Deploy:** Railway (backend, worker, beat, Postgres, Redis), Vercel (frontend)
+- **CI/CD:** GitHub Actions (lint, testes, migrações, build backend e frontend)
 - **Pagamentos:** camada abstrata `PaymentProvider` com provider `sandbox` (padrão) e integração de exemplo para Celcoin; pronto para Asaas, Mercado Pago, Efí, Iugu, OpenPix etc.
 - **Documentação:** OpenAPI/Swagger em `/api/docs/`
 
@@ -80,6 +82,7 @@ docker compose exec web python manage.py createsuperuser
 - Swagger / OpenAPI: http://localhost:8000/api/docs/
 - Portal do lojista: http://localhost:5173
 - Admin Django: http://localhost:8000/django-admin/
+- Healthcheck: http://localhost:8000/api/v1/health/
 
 ### Scripts úteis
 
@@ -93,7 +96,18 @@ make test            # roda pytest
 make lint            # ruff
 make format          # black
 make shell           # Django shell_plus
+
+make prod-build      # build da imagem de produção
+make prod-up         # sobe ambiente de produção local
+make prod-check      # valida healthcheck e deploy check
+make frontend-build  # build do portal Vue
 ```
+
+---
+
+## Deploy
+
+Veja o passo a passo completo em `docs/DEPLOYMENT.md` e a checklist de lançamento em `docs/STAGING_CHECKLIST.md`.
 
 ---
 
@@ -122,3 +136,5 @@ Este projeto é um protótipo/MVP de software financeiro brasileiro. Não é uma
 - `docs/ROADMAP.md`
 - `docs/SECURITY.md`
 - `docs/BUSINESS_RULES.md`
+- `docs/DEPLOYMENT.md`
+- `docs/STAGING_CHECKLIST.md`

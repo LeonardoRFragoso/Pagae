@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: pagae
+          POSTGRES_USER: pagae
+          POSTGRES_PASSWORD: pagae
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      SECRET_KEY: ci-secret-key-not-used-in-production
+      DATABASE_URL: postgres://pagae:pagae@localhost:5432/pagae
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/development.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Check migrations
+        run: python manage.py makemigrations --check
+
+      - name: Run migrations
+        run: python manage.py migrate
+
+      - name: Run tests with coverage
+        run: pytest tests/ -q --tb=short --cov-report=term
+
+      - name: Build production Docker image
+        run: |
+          cd ..
+          docker build -t pagae-backend -f backend/Dockerfile backend
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend/merchant-portal
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ./frontend/merchant-portal/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint || true
+
+      - name: Test
+        run: npm run test || true

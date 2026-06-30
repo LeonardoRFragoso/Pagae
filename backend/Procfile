@@ -1,0 +1,3 @@
+web: /app/docker/start.sh
+worker: celery -A config.celery worker --loglevel=info
+beat: celery -A config.celery beat --loglevel=info

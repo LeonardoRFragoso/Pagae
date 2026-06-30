@@ -39,7 +39,7 @@ class TestSettlement:
 
     def test_settle_forbidden_for_customer(self, api_client, customer_user):
         user = UserFactory(role="merchant_owner")
-        merchant = MerchantFactory(user=user, status=MerchantStatus.ACTIVE, pix_key="loja@teste.com")
+        MerchantFactory(user=user, status=MerchantStatus.ACTIVE, pix_key="loja@teste.com")
         key_result = MerchantService().generate_api_key(user=user)
         customer = ApprovedCustomerFactory()
 
@@ -57,7 +57,7 @@ class TestSettlement:
 
     def test_settle_service_fails_without_pix_key(self):
         user = UserFactory(role="merchant_owner")
-        merchant = MerchantFactory(user=user, status=MerchantStatus.ACTIVE, pix_key="")
+        MerchantFactory(user=user, status=MerchantStatus.ACTIVE, pix_key="")
         key_result = MerchantService().generate_api_key(user=user)
         customer = ApprovedCustomerFactory()
 

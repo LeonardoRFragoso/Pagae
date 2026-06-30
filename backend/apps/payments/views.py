@@ -27,6 +27,7 @@ class PaymentSimulationView(APIView):
     """Sandbox endpoint to simulate a Pix payment for a given txid."""
 
     permission_classes = [AllowAny]
+    throttle_scope = "payment_simulate"
 
     def post(self, request: Request) -> Response:
         txid = request.data.get("txid")
@@ -43,6 +44,7 @@ class SandboxWebhookView(APIView):
     """Generic fake webhook receiver for local development/tests."""
 
     permission_classes = [AllowAny]
+    throttle_scope = "webhook_sandbox"
 
     def post(self, request: Request) -> Response:
         provider = get_payment_provider()

@@ -10,4 +10,11 @@ INTERNAL_IPS = ["127.0.0.1"]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-DATABASES["default"]["PORT"] = config("DB_PORT", default="15432")  # noqa: F405
+# Disable throttling for local development and tests.
+REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []  # noqa: F405
+
+# No HTTPS enforcement in development.
+SECURE_SSL_REDIRECT = False
+SECURE_HSTS_SECONDS = 0
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False

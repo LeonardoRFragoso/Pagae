@@ -18,6 +18,13 @@ Objetivo: colocar em produção um checkout Pix parcelado funcional para um grup
 - [x] Dashboard do lojista com vendas, pedidos e status de parcelas.
 - [x] Rotina Celery para marcar parcelas vencidas e suspender limites.
 - [x] Documentação técnica (arquitetura, API, segurança, regras de negócio).
+- [x] Settings separados por ambiente com env vars.
+- [x] Dockerfile de produção (Gunicorn + WhiteNoise + entrypoint).
+- [x] Configuração de deploy Railway (web, worker, beat) e Vercel.
+- [x] Hardening de segurança (HTTPS, cookies, CORS, CSRF, HSTS, rate limiting).
+- [x] Healthcheck e teste automatizado.
+- [x] CI/CD com GitHub Actions.
+- [x] Guia de deploy e checklist de staging.
 
 ## Fase 2 — Integração real de Pix
 

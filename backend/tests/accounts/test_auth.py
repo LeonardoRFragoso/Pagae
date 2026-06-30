@@ -1,8 +1,6 @@
 import pytest
-from django.urls import reverse
 from rest_framework import status
 
-from apps.accounts.models import User, UserRole
 from tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
