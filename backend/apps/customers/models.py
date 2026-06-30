@@ -23,13 +23,15 @@ class Customer(BaseModel):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="customer_profile",
+        null=True,
+        blank=True,
     )
 
     # Personal data
     # TODO: encrypt CPF at rest before production (use django-encrypted-fields or AWS KMS)
     cpf = models.CharField(max_length=14, unique=True, db_index=True)
     full_name = models.CharField(max_length=255)
-    birth_date = models.DateField()
+    birth_date = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=20)
     email = models.EmailField()
 

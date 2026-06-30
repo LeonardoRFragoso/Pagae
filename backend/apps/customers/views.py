@@ -1,11 +1,17 @@
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.merchants.authentication import ApiKeyAuthentication
 from core import responses
 
-from .serializers import CustomerCreateSerializer, CustomerSerializer, CustomerUpdateSerializer
+from .serializers import (
+    CustomerCreateSerializer,
+    CustomerMerchantSerializer,
+    CustomerSerializer,
+    CustomerUpdateSerializer,
+)
 from .services import CustomerService
 
 
@@ -18,6 +24,24 @@ class CustomerCreateView(APIView):
         service = CustomerService()
         customer = service.register(user=request.user, data=serializer.validated_data)
         return responses.created(data=CustomerSerializer(customer).data)
+
+
+class CustomerMerchantView(APIView):
+    authentication_classes = [ApiKeyAuthentication]
+    permission_classes = [AllowAny]
+
+    def post(self, request: Request) -> Response:
+        serializer = CustomerMerchantSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = CustomerService()
+        customer = service.get_or_create_for_merchant(serializer.validated_data)
+        return responses.created(data=CustomerSerializer(customer).data)
+
+    def _extract_key(self, request: Request) -> str:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            return auth[7:]
+        return ""
 
 
 class CustomerMeView(APIView):

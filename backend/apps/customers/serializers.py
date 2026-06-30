@@ -60,6 +60,16 @@ class CustomerUpdateSerializer(serializers.ModelSerializer):
         fields = ("phone", "email", "cep", "street", "number", "complement", "neighborhood", "city", "state")
 
 
+class CustomerMerchantSerializer(serializers.Serializer):
+    cpf = serializers.CharField(max_length=14)
+    full_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+
+    def validate_cpf(self, value: str) -> str:
+        return _validate_cpf(value)
+
+
 class CustomerSerializer(serializers.ModelSerializer):
     available_limit = serializers.IntegerField(read_only=True)
 

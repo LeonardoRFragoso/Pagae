@@ -16,6 +16,43 @@ class CustomerService:
     def __init__(self, repository: CustomerRepository | None = None) -> None:
         self.repository = repository or CustomerRepository()
 
+    def get_or_create_for_merchant(self, data: dict[str, Any]) -> Customer:
+        """
+        Create or update a customer profile from server-to-server merchant data.
+        Does not require an authenticated user account.
+        """
+        cpf = data.get("cpf", "").replace(".", "").replace("-", "")
+        if not cpf:
+            raise ForbiddenError("CPF is required.")
+
+        customer = self.repository.get_by_cpf(cpf)
+        if customer is None:
+            customer = self.repository.create(
+                user=None,
+                cpf=cpf,
+                full_name=data.get("full_name", ""),
+                birth_date=data.get("birth_date"),
+                phone=data.get("phone", ""),
+                email=data.get("email", ""),
+                kyc_status="approved",
+            )
+            logger.info(
+                "customer_created_by_merchant",
+                extra={"customer_id": str(customer.id), "cpf_suffix": cpf[-4:]},
+            )
+        else:
+            updatable = {
+                "full_name": data.get("full_name", customer.full_name),
+                "phone": data.get("phone", customer.phone),
+                "email": data.get("email", customer.email),
+            }
+            customer = self.repository.update(customer, **updatable)
+            logger.info(
+                "customer_updated_by_merchant",
+                extra={"customer_id": str(customer.id), "cpf_suffix": cpf[-4:]},
+            )
+        return customer
+
     def register(self, user: "User", data: dict[str, Any]) -> Customer:
         """
         Create a customer profile linked to an existing user account.

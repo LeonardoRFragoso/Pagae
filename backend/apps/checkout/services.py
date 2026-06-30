@@ -4,6 +4,7 @@ from typing import Any
 
 from apps.customers.models import Customer
 from apps.customers.repositories import CustomerRepository
+from apps.customers.services import CustomerService
 from apps.ledger.services import LedgerService
 from apps.merchants.services import MerchantService
 from apps.notifications.services import NotificationService
@@ -251,11 +252,36 @@ class CheckoutService:
         }
 
     def _resolve_customer(self, identifier: dict[str, Any]) -> Customer | None:
-        if identifier.get("cpf"):
-            cpf = identifier["cpf"].replace(".", "").replace("-", "")
-            return self.customer_repository.get_by_cpf(cpf)
+        if not identifier:
+            return None
+
+        cpf = identifier.get("cpf", "").replace(".", "").replace("-", "")
+        if cpf:
+            customer = self.customer_repository.get_by_cpf(cpf)
+            if customer is None:
+                customer = CustomerService().get_or_create_for_merchant(
+                    {
+                        "cpf": cpf,
+                        "full_name": identifier.get("full_name", ""),
+                        "email": identifier.get("email", ""),
+                        "phone": identifier.get("phone", ""),
+                    }
+                )
+            else:
+                updatable = {
+                    "full_name": identifier.get("full_name", customer.full_name),
+                    "email": identifier.get("email", customer.email),
+                    "phone": identifier.get("phone", customer.phone),
+                }
+                customer = self.customer_repository.update(customer, **updatable)
+            return customer
+
         if identifier.get("email"):
-            return Customer.objects.filter(email=identifier["email"]).first()
+            customer = Customer.objects.filter(email=identifier["email"]).first()
+            if customer:
+                return customer
         if identifier.get("phone"):
-            return Customer.objects.filter(phone=identifier["phone"]).first()
+            customer = Customer.objects.filter(phone=identifier["phone"]).first()
+            if customer:
+                return customer
         return None
