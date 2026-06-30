@@ -1,0 +1,11 @@
+-r base.txt
+
+# WSGI server
+gunicorn==23.0.0
+
+# Monitoring
+sentry-sdk[django]==2.19.2
+
+# Storage (S3 for KYC documents)
+boto3==1.35.90
+django-storages==1.14.4
