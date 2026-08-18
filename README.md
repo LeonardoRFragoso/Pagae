@@ -123,6 +123,15 @@ Veja detalhes em `docs/ROADMAP.md`.
 
 ---
 
+## Testes e CI
+
+- **CI:** GitHub Actions — lint, testes, migrações, build backend e frontend
+- **Status do CI:** passando (3 runs consecutivas)
+- **Testes:** pytest com cobertura por app de domínio (accounts, checkout, collections, customers, ledger, merchants, notifications, payments, settlements, webhooks)
+- **E2E:** testes end-to-end no diretório `backend/tests/e2e/`
+
+---
+
 ## Licença e disclaimer
 
 Este projeto é um protótipo/MVP de software financeiro brasileiro. Não é uma instituição financeira. O Pagaê não assume risco de inadimplência do consumidor nesta fase e não oferece antecipação de recebíveis. Marcas, textos e fluxos são originais e não copiam concorrentes.
